@@ -6,3 +6,8 @@ class DatasetUploadForm(forms.ModelForm):
     class Meta:
         model = Dataset
         fields = ['name', 'description', 'file', 'file_type']
+
+class DatasetUploadForm(forms.ModelForm):
+    class Meta:
+        model = Dataset
+        fields = ['name', 'description', 'file', 'file_type']
