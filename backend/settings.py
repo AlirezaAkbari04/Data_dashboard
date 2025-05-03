@@ -29,7 +29,9 @@ ALLOWED_HOSTS = []
 
 
 # Application definition
+# dashboard_core/settings.py
 
+# Add our apps to INSTALLED_APPS
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -37,7 +39,21 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    
+    # Third-party apps
+    'rest_framework',  # For building APIs
+    
+    # Our apps
+    'data_manager',
+    'llm_interface',
 ]
+
+
+# Configure media files (for file uploads)
+import os
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -49,7 +65,8 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'Data_dashboard.urls'
+ROOT_URLCONF = 'backend.urls'
+
 
 TEMPLATES = [
     {
