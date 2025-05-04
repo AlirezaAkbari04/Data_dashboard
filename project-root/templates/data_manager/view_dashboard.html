@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h2>{{ dashboard.title }}</h2>
+    
+    {% if messages %}
+    <div class="messages">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    
+    <div class="dashboard-container">
+        <iframe
+            src="{{ embed_url }}"
+            frameborder="0"
+            width="100%"
+            height="800"
+            allowtransparency
+        ></iframe>
+    </div>
+</div>
+{% endblock %}
