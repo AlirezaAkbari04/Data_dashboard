@@ -5,6 +5,42 @@ from django.contrib import messages
 from .models import Dataset, DataColumn, MetabaseConfig, MetabaseDashboard
 from .forms import DatasetUploadForm
 from .metabase_utils import generate_metabase_url
+from .activity_utils import track_activity
+
+# Update dataset_detail view
+@login_required
+def dataset_detail(request, pk):
+    dataset = get_object_or_404(Dataset, pk=pk)
+    
+    # Check permissions (existing code)
+    if dataset.owner != request.user and not dataset.is_public:
+        messages.error(request, "You don't have permission to view this dataset.")
+        return redirect('dataset_list')
+    
+    # Track this view
+    track_activity(request.user, 'VIEW', dataset=dataset)
+    
+    # Rest of your existing view code...
+    return render(request, 'data_manager/dataset_detail.html', {'dataset': dataset})
+
+# Update view_dashboard view 
+@login_required
+def view_dashboard(request, pk):
+    dashboard = MetabaseDashboard.objects.get(pk=pk)
+    
+    # Check permissions (existing code)
+    if dashboard.dataset.owner != request.user:
+        messages.error(request, "You don't have permission to view this dashboard.")
+        return redirect('dataset_list')
+    
+    # Track this dashboard view
+    track_activity(
+        request.user, 
+        'DASHBOARD', 
+        dataset=dashboard.dataset, 
+        dashboard=dashboard
+    )
+    
 
 @login_required
 def upload_dataset(request):
@@ -109,3 +145,4 @@ def view_dashboard(request, pk):
         'dashboard': dashboard,
         'embed_url': embed_url
     })
+

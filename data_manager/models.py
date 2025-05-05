@@ -1,4 +1,5 @@
 # project-root/data_manager/models.py
+from django.conf import settings
 from django.db import models
 from django.contrib.auth.models import User
 
@@ -49,3 +50,26 @@ class MetabaseDashboard(models.Model):
     
     def __str__(self):
         return self.title
+class UserActivity(models.Model):
+    """Tracks user actions within the system"""
+    ACTION_CHOICES = (
+        ('VIEW', 'Viewed Dataset'),
+        ('UPLOAD', 'Uploaded Dataset'),
+        ('DOWNLOAD', 'Downloaded Dataset'),
+        ('DASHBOARD', 'Viewed Dashboard'),
+        ('SEARCH', 'Performed Search'),
+    )
+    
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    action = models.CharField(max_length=20, choices=ACTION_CHOICES)
+    dataset = models.ForeignKey('Dataset', on_delete=models.SET_NULL, null=True, blank=True)
+    dashboard = models.ForeignKey('MetabaseDashboard', on_delete=models.SET_NULL, null=True, blank=True)
+    details = models.JSONField(default=dict, blank=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        verbose_name_plural = "User Activities"
+        ordering = ['-timestamp']
+    
+    def __str__(self):
+        return f"{self.user.username} - {self.action} - {self.timestamp.strftime('%Y-%m-%d %H:%M')}"
