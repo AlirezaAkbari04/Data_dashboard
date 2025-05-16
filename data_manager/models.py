@@ -17,13 +17,13 @@ class Dataset(models.Model):
     file_type = models.CharField(max_length=5, choices=FILE_TYPES)
     upload_date = models.DateTimeField(auto_now_add=True)
     owner = models.ForeignKey(User, on_delete=models.CASCADE)
+    is_public = models.BooleanField(default=False)  # Added this field
     
     def __str__(self):
         return self.name
 
 class DataColumn(models.Model):
     """Stores information about columns in a dataset"""
-    # Make sure the Dataset reference matches exactly
     dataset = models.ForeignKey('Dataset', related_name='columns', on_delete=models.CASCADE)
     name = models.CharField(max_length=100)
     data_type = models.CharField(max_length=50)
@@ -42,7 +42,6 @@ class MetabaseConfig(models.Model):
         
 class MetabaseDashboard(models.Model):
     """Stores a reference to a Metabase dashboard"""
-    # Use string reference for consistency
     dataset = models.ForeignKey('Dataset', on_delete=models.CASCADE, related_name='dashboards')
     dashboard_id = models.IntegerField()
     title = models.CharField(max_length=255)
@@ -50,6 +49,7 @@ class MetabaseDashboard(models.Model):
     
     def __str__(self):
         return self.title
+
 class UserActivity(models.Model):
     """Tracks user actions within the system"""
     ACTION_CHOICES = (

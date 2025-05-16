@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="jumbotron bg-light p-5 rounded">
+    <h1 class="display-4">Welcome to Data Dashboard</h1>
+    <p class="lead">Upload, manage, and visualize your datasets with ease</p>
+    <hr class="my-4">
+    {% if user.is_authenticated %}
+        <p>Begin exploring your data or upload a new dataset.</p>
+        <div class="d-grid gap-2 d-md-flex">
+            <a href="{% url 'dataset_list' %}" class="btn btn-primary btn-lg me-2">My Datasets</a>
+            <a href="{% url 'upload_dataset' %}" class="btn btn-success btn-lg">Upload New Dataset</a>
+        </div>
+    {% else %}
+        <p>Sign in to manage your datasets and visualizations.</p>
+        <a href="{% url 'login' %}" class="btn btn-primary btn-lg">Sign In</a>
+    {% endif %}
+</div>
+
+<div class="row mt-5">
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Upload Datasets</h5>
+                <p class="card-text">Upload CSV, Excel, or JSON files and let the system automatically analyze your data.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Visualize Data</h5>
+                <p class="card-text">Create interactive dashboards to visualize and gain insights from your data.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Share Insights</h5>
+                <p class="card-text">Make datasets public to share with others or keep them private for your use only.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

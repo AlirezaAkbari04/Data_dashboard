@@ -1,25 +1,37 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container">
+<div class="d-flex justify-content-between align-items-center mb-4">
     <h2>{{ dashboard.title }}</h2>
-    
-    {% if messages %}
-    <div class="messages">
-        {% for message in messages %}
-        <div class="alert alert-{{ message.tags }}">{{ message }}</div>
-        {% endfor %}
-    </div>
-    {% endif %}
-    
-    <div class="dashboard-container">
-        <iframe
-            src="{{ embed_url }}"
-            frameborder="0"
-            width="100%"
-            height="800"
-            allowtransparency
-        ></iframe>
-    </div>
+    <a href="{% url 'dataset_detail' dashboard.dataset.id %}" class="btn btn-outline-secondary">Back to Dataset</a>
 </div>
+
+{% if metabase_available and embed_url %}
+    <div class="card mb-4">
+        <div class="card-body p-0">
+            <iframe src="{{ embed_url }}" frameborder="0" width="100%" height="800" allowtransparency></iframe>
+        </div>
+    </div>
+{% else %}
+    <div class="card mb-4">
+        <div class="card-header">Dashboard Preview</div>
+        <div class="card-body">
+            <div class="alert alert-info">
+                <h4 class="alert-heading">Metabase Integration</h4>
+                <p>Metabase integration is not fully configured yet. This placeholder represents where the actual dashboard will appear.</p>
+                <hr>
+                <p class="mb-0">Dashboard ID: {{ dashboard.dashboard_id }} | Dataset: {{ dashboard.dataset.name }}</p>
+            </div>
+            
+            <!-- Placeholder visualization -->
+            <div style="height: 400px; background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); 
+                        display: flex; align-items: center; justify-content: center; border-radius: 4px;">
+                <div class="text-center text-secondary">
+                    <h4>Data Visualization Placeholder</h4>
+                    <p class="text-muted">This will be replaced with actual visualizations from Metabase.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endif %}
 {% endblock %}

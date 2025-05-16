@@ -1,0 +1,425 @@
+{% extends "base.html" %}
+
+{% block title %}Data Analysis: {{ dataset.name }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Data Analysis: {{ dataset.name }}</h2>
+        <a href="{% url 'dataset_detail' dataset.id %}" class="btn btn-outline-secondary">Back to Dataset</a>
+    </div>
+    
+    <!-- Dataset Overview Card -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Dataset Overview</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>Total Columns:</strong> {{ column_types|length }}</p>
+                    <p><strong>Numeric Columns:</strong> {{ numeric_columns|length }}</p>
+                    <p><strong>Categorical Columns:</strong> {{ categorical_columns|length }}</p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>Owner:</strong> {{ dataset.owner.username }}</p>
+                    <p><strong>File Type:</strong> {{ dataset.file_type }}</p>
+                    <p><strong>Upload Date:</strong> {{ dataset.upload_date }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- COVID-specific Visualizations -->
+    {% if is_covid_data %}
+    <div class="row mb-4">
+        <!-- Top Countries Bar Chart -->
+        {% if chart_data.top_cases %}
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0">Top Countries by COVID-19 Cases</h5>
+                </div>
+                <div class="card-body">
+                    <div style="height: 300px">
+                        <canvas id="topCasesChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Continent Pie Chart -->
+        {% if chart_data.continent %}
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0">Cases by Continent</h5>
+                </div>
+                <div class="card-body">
+                    <div style="height: 300px">
+                        <canvas id="continentChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Cases vs Deaths Scatter Plot -->
+    {% if chart_data.scatter %}
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Cases vs Deaths Relationship</h5>
+                </div>
+                <div class="card-body">
+                    <div style="height: 400px">
+                        <canvas id="scatterChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Generic Visualizations -->
+    {% else %}
+    <div class="row mb-4">
+        <!-- Bar Chart -->
+        {% if chart_data.bar %}
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0">Top 10 {{ chart_data.bar.category_col }} by {{ chart_data.bar.value_col }}</h5>
+                </div>
+                <div class="card-body">
+                    <div style="height: 300px">
+                        <canvas id="barChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Distribution Chart -->
+        {% if chart_data.distribution %}
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0">Distribution of Numeric Values</h5>
+                </div>
+                <div class="card-body">
+                    <div style="height: 300px">
+                        <canvas id="distributionChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+    
+    <!-- Numeric Columns Summary -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Numeric Columns Summary</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Column</th>
+                            <th>Min</th>
+                            <th>Mean</th>
+                            <th>Max</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for col, values in stats.items %}
+                        <tr>
+                            <td>{{ col }}</td>
+                            <td>{{ values.min }}</td>
+                            <td>{{ values.mean|floatformat:2 }}</td>
+                            <td>{{ values.max }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    // Common chart colors
+    const colors = [
+        'rgba(54, 162, 235, 0.7)',
+        'rgba(255, 99, 132, 0.7)',
+        'rgba(255, 206, 86, 0.7)',
+        'rgba(75, 192, 192, 0.7)',
+        'rgba(153, 102, 255, 0.7)',
+        'rgba(255, 159, 64, 0.7)',
+        'rgba(199, 199, 199, 0.7)',
+        'rgba(83, 102, 255, 0.7)',
+        'rgba(255, 99, 255, 0.7)',
+        'rgba(0, 162, 86, 0.7)'
+    ];
+    
+    // COVID-specific charts
+    {% if is_covid_data %}
+        // Top Cases Bar Chart
+        {% if chart_data.top_cases %}
+        const topCasesCtx = document.getElementById('topCasesChart').getContext('2d');
+        new Chart(topCasesCtx, {
+            type: 'bar',
+            data: {
+                labels: {{ chart_data.top_cases.labels|safe }},
+                datasets: [{
+                    label: 'Total COVID-19 Cases',
+                    data: {{ chart_data.top_cases.values|safe }},
+                    backgroundColor: colors,
+                    borderColor: colors.map(c => c.replace('0.7', '1')),
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                if (value >= 1000000) {
+                                    return (value / 1000000).toFixed(1) + 'M';
+                                } else if (value >= 1000) {
+                                    return (value / 1000).toFixed(0) + 'K';
+                                }
+                                return value;
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let value = context.raw;
+                                if (value >= 1000000) {
+                                    return (value / 1000000).toFixed(2) + ' Million Cases';
+                                } else if (value >= 1000) {
+                                    return (value / 1000).toFixed(1) + ' Thousand Cases';
+                                }
+                                return value + ' Cases';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        {% endif %}
+        
+        // Continent Pie Chart
+        {% if chart_data.continent %}
+        const continentCtx = document.getElementById('continentChart').getContext('2d');
+        new Chart(continentCtx, {
+            type: 'pie',
+            data: {
+                labels: {{ chart_data.continent.labels|safe }},
+                datasets: [{
+                    data: {{ chart_data.continent.values|safe }},
+                    backgroundColor: colors,
+                    borderColor: colors.map(c => c.replace('0.7', '1')),
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.raw;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = Math.round((value / total) * 100);
+                                return `${label}: ${value.toLocaleString()} cases (${percentage}%)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        {% endif %}
+        
+        // Scatter Chart
+        {% if chart_data.scatter %}
+        const scatterCtx = document.getElementById('scatterChart').getContext('2d');
+        new Chart(scatterCtx, {
+            type: 'scatter',
+            data: {
+                datasets: [{
+                    label: 'Cases vs Deaths by Country',
+                    data: {{ chart_data.scatter.data|safe }},
+                    backgroundColor: 'rgba(255, 99, 132, 0.7)',
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    borderWidth: 1,
+                    pointRadius: 5,
+                    pointHoverRadius: 7
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: '{{ chart_data.scatter.x_label }}'
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                if (value >= 1000000) {
+                                    return (value / 1000000).toFixed(0) + 'M';
+                                } else if (value >= 1000) {
+                                    return (value / 1000).toFixed(0) + 'K';
+                                }
+                                return value;
+                            }
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: '{{ chart_data.scatter.y_label }}'
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                if (value >= 1000000) {
+                                    return (value / 1000000).toFixed(0) + 'M';
+                                } else if (value >= 1000) {
+                                    return (value / 1000).toFixed(0) + 'K';
+                                }
+                                return value;
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const point = context.raw;
+                                return `${point.country}: ${point.x.toLocaleString()} cases, ${point.y.toLocaleString()} deaths`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        {% endif %}
+    
+    {% else %}
+        // Generic charts
+        
+        // Bar Chart
+        {% if chart_data.bar %}
+        const barCtx = document.getElementById('barChart').getContext('2d');
+        new Chart(barCtx, {
+            type: 'bar',
+            data: {
+                labels: {{ chart_data.bar.labels|safe }},
+                datasets: [{
+                    label: '{{ chart_data.bar.value_col }}',
+                    data: {{ chart_data.bar.values|safe }},
+                    backgroundColor: colors,
+                    borderColor: colors.map(c => c.replace('0.7', '1')),
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+        {% endif %}
+        
+        // Distribution Chart
+        {% if chart_data.distribution %}
+        const distributionCtx = document.getElementById('distributionChart').getContext('2d');
+        
+        // Prepare data for box plot-like visualization
+        const labels = {{ chart_data.distribution.labels|safe }};
+        const datasets = labels.map((label, index) => {
+            const stats = {{ chart_data.distribution.stats|safe }}[label];
+            return {
+                label: label,
+                data: [
+                    {
+                        min: stats.min,
+                        q1: stats.q1,
+                        median: stats.median,
+                        q3: stats.q3,
+                        max: stats.max
+                    }
+                ],
+                backgroundColor: colors[index],
+                borderColor: colors[index].replace('0.7', '1'),
+                borderWidth: 1
+            };
+        });
+        
+        new Chart(distributionCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Distribution of Values'],
+                datasets: datasets
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                },
+                indexAxis: 'y',
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const datapoint = context.raw;
+                                const label = context.dataset.label;
+                                return [
+                                    `${label}:`,
+                                    `Min: ${datapoint.min}`,
+                                    `Q1: ${datapoint.q1}`,
+                                    `Median: ${datapoint.median}`,
+                                    `Q3: ${datapoint.q3}`,
+                                    `Max: ${datapoint.max}`
+                                ];
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        {% endif %}
+    {% endif %}
+</script>
+{% endblock %}
